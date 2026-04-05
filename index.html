@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>내신 단어 완전 정복 (타이핑 버전)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Noto+Sans+KR:wght@400;700&display=swap');
+        
+        :root {
+            --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            --primary-color: #6a5af9;
+            --secondary-color: #ff6b81;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --correct-color: #20bf6b;
+            --incorrect-color: #fa8231;
+            --border-radius: 24px;
+            --shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Poppins', 'Noto Sans KR', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-color);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        #app-container {
+            width: 100%; max-width: 450px; height: 100vh; max-height: 900px;
+            background: #fff; border-radius: var(--border-radius);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            overflow: hidden; display: flex; flex-direction: column; position: relative;
+        }
+
+        #home-screen {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            height: 100%; padding: 30px; text-align: center; overflow-y: auto;
+        }
+        #home-screen h1 { font-size: 2.2em; margin-bottom: 10px; color: var(--primary-color); }
+        #home-screen p { margin-bottom: 30px; color: #666; font-size: 1em; }
+        
+        .input-group { margin-bottom: 30px; width: 100%; }
+        #user-name {
+            width: 100%; padding: 15px; font-size: 1.2em;
+            border: 2px solid #ddd; border-radius: 15px;
+            text-align: center; outline: none; transition: 0.3s;
+        }
+        #user-name:focus { border-color: var(--primary-color); }
+
+        #lesson-list {
+            width: 100%; flex-grow: 1; overflow-y: auto; padding-right: 5px;
+        }
+        #lesson-list::-webkit-scrollbar { width: 6px; }
+        #lesson-list::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 3px; }
+        #lesson-list::-webkit-scrollbar-track { background-color: transparent; }
+
+        .lesson-btn {
+            width: 100%; padding: 22px; margin-bottom: 15px;
+            background: white; border: 2px solid #f0f0f0; border-radius: 20px;
+            font-size: 1.2em; font-weight: 700; color: #555;
+            cursor: pointer; transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        .lesson-btn:hover {
+            border-color: var(--primary-color); transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(106, 90, 249, 0.2);
+            background-color: #f8f7ff;
+        }
+        .lesson-btn span { font-size: 0.85em; color: #999; font-weight: normal; }
+
+        #quiz-interface { display: none; flex-direction: column; height: 100%; }
+
+        #quiz-header { padding: 15px 25px; display: flex; align-items: center; gap: 15px; background: #fff; z-index: 10; border-bottom: 1px solid #eee; }
+        #home-btn { background: none; border: none; font-size: 1.5em; cursor: pointer; }
+        #progress-bar-container { flex-grow: 1; background-color: #f0f0f0; border-radius: 10px; height: 10px; overflow: hidden; }
+        #progress-bar { width: 0%; height: 100%; background: linear-gradient(90deg, var(--secondary-color), var(--primary-color)); transition: width 0.3s ease; }
+        
+        #quiz-body { flex-grow: 1; padding: 25px; overflow-y: auto; padding-bottom: 60px; }
+
+        .card {
+            background: var(--card-bg); border-radius: var(--border-radius);
+            padding: 30px 20px; box-shadow: var(--shadow);
+            text-align: center; margin-bottom: 20px; border: 1px solid #f0f0f0;
+        }
+        #question-text { font-size: 1.3em; font-weight: 600; line-height: 1.5; color: #2c3e50; word-break: keep-all; }
+        
+        .option-btn {
+            width: 100%; background-color: #fff; border: 2px solid #f0f0f0;
+            border-radius: 18px; padding: 16px; font-size: 1.1em; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; text-align: left; margin-bottom: 12px;
+        }
+        .option-btn:hover:not(:disabled) { border-color: var(--primary-color); background-color: #f8f7ff; }
+        .option-btn.correct { border-color: var(--correct-color); background-color: #eafff2; color: var(--correct-color); }
+        .option-btn.incorrect { border-color: var(--incorrect-color); background-color: #fff5eb; color: var(--incorrect-color); animation: shake 0.4s; }
+        
+        /* 타이핑 학습용 스타일 추가 */
+        .typing-container { margin-top: 15px; text-align: left; animation: fadeIn 0.5s; }
+        .typing-label { font-size: 0.9em; color: var(--primary-color); font-weight: bold; margin-bottom: 8px; display: block; }
+        .typing-input {
+            width: 100%; padding: 14px; font-size: 1em; border: 2px solid #eee;
+            border-radius: 12px; outline: none; transition: 0.3s; font-family: inherit;
+        }
+        .typing-input:focus { border-color: var(--primary-color); background-color: #fcfbff; }
+        .typing-input.correct-flash { border-color: var(--correct-color); background-color: #eafff2; }
+
+        .next-btn {
+            background: linear-gradient(45deg, var(--correct-color), #2ecc71);
+            color: white; border: none; padding: 18px; font-size: 1.2em; font-weight: 700;
+            border-radius: 16px; cursor: pointer; width: 100%; margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .submit-btn { background: linear-gradient(45deg, #6a5af9, #a8c0ff); color: white; border: none; padding: 20px; font-size: 1.3em; font-weight: 700; border-radius: 18px; cursor: pointer; width: 100%; margin-top: 20px; box-shadow: 0 5px 20px rgba(106, 90, 249, 0.4); }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 100;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 30px; border-radius: 28px;
+            width: 90%; max-width: 380px; text-align: center;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+            max-height: 80vh; overflow-y: auto;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-content h3 { color: var(--primary-color); margin-bottom: 20px; font-size: 1.3em; }
+        .example-text { font-size: 1.3em; font-weight: 600; margin-bottom: 20px; line-height: 1.5; color: #444; word-break: keep-all; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; transform: scale(1); } }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-5px)} 40%,80%{transform:translateX(5px)} }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="home-screen">
+        <h1>내신 단어 챌린지</h1>
+        <p>영영풀이와 예문을 직접 타이핑하며 정복!</p>
+        
+        <div class="input-group">
+            <input type="text" id="user-name" placeholder="이름 (예: 1학년 2반 홍길동)">
+        </div>
+
+        <div id="lesson-list">
+            <button class="lesson-btn" onclick="startLesson('Lesson1')">
+                Lesson 1
+                <span>Our Day, Our Story</span>
+            </button>
+            <button class="lesson-btn" onclick="startLesson('Lesson4')">
+                Lesson 4
+                <span>Vocabulary Study</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="quiz-interface">
+        <div id="quiz-header">
+            <button id="home-btn" onclick="goHome()">🏠</button>
+            <div id="progress-bar-container">
+                <div id="progress-bar"></div>
+            </div>
+        </div>
+        <div id="quiz-body"></div>
+    </div>
+</div>
+
+<script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyLldyhv4TK17-Bhag-OQ7taJK5vxFAYMz6zLlQFv1nB9IPhC9lxbAs-D6bFZn_zC5U/exec";
+
+    // 데이터는 그대로 유지
+    const allLessons = {
+        "Lesson1": [
+            { w: "often", def: "many times or regularly", examples: [{sentence: "He often goes to the gym to stay healthy."}] },
+            { w: "usually", def: "in most cases or most of the time", examples: [{sentence: "I usually eat lunch at noon."}] },
+            { w: "goal", def: "something you want to achieve", examples: [{sentence: "Her goal is to become a successful doctor."}] },
+            { w: "hope", def: "to want something to happen or be true and think it is possible", examples: [{sentence: "Mary hopes to visit her grandmother next weekend."}] },
+            { w: "daily", def: "happening every day", examples: [{sentence: "She takes a daily walk."}] },
+            { w: "routine", def: "the usual order of doing things", examples: [{sentence: "He follows a morning routine."}] },
+            { w: "wake up", def: "to stop sleeping", examples: [{sentence: "I wake up at 7 every morning."}] },
+            { w: "cheerful", def: "happy and positive", examples: [{sentence: "He is always cheerful and makes people smile."}] },
+            { w: "schedule", def: "a plan of when things will happen", examples: [{sentence: "My class schedule is very busy."}] },
+            { w: "break", def: "a short time of rest", examples: [{sentence: "Let's take a break before we continue studying."}] },
+            { w: "virtual", def: "using computers and the internet", examples: [{sentence: "We joined a virtual meeting."}] },
+            { w: "goggles", def: "special glasses for protecting your eyes", examples: [{sentence: "Students wear virtual reality goggles that show their virtual character."}] },
+            { w: "walk along", def: "to walk next to or beside something", examples: [{sentence: "We walked along the river and enjoyed the view."}] },
+            { w: "grand", def: "very big and impressive", examples: [{sentence: "They stayed in a grand hotel."}] },
+            { w: "ancient", def: "very old", examples: [{sentence: "We visited an ancient building from hundreds of years ago."}] },
+            { w: "believe in", def: "to think something is real or true", examples: [{sentence: "Do you believe in ghosts?"}] },
+            { w: "outside", def: "not inside a building", examples: [{sentence: "We ate lunch outside because the weather was nice."}] },
+            { w: "reach", def: "to arrive at a place", examples: [{sentence: "We finally reached the top of the mountain."}] },
+            { w: "review", def: "to study a subject again", examples: [{sentence: "I'm going to review my schoolwork after school."}] },
+            { w: "solve", def: "to find an answer to a problem", examples: [{sentence: "He quickly solves the math problem on the board."}] },
+            { w: "explain", def: "to make something clear or easy to understand", examples: [{sentence: "Can you explain this word?"}] },
+            { w: "by the way", def: "used to add a new piece of information or something that is not related to the conversation", examples: [{sentence: "By the way, I saw your brother at the mall."}] },
+            { w: "recommend", def: "to say that something is good", examples: [{sentence: "I recommend this book."}] },
+            { w: "skill", def: "the ability to do something well", examples: [{sentence: "It takes time to learn a skill!"}] },
+            { w: "keep a diary", def: "to write regularly in a notebook about your daily life, thoughts, or feelings", examples: [{sentence: "Susie keeps a diary to track her emotions."}] },
+            { w: "discuss", def: "to talk about something", examples: [{sentence: "We discussed our weekend plans during lunch."}] }
+        ],
+        "Lesson4": [
+            { w: "village", def: "an area where people live and work, that is smaller than a town, usually in the countryside", examples: [{sentence: "Dave grew up in a small village in the mountains."}] },
+            { w: "rail", def: "one of the two metal tracks fixed to the ground on which trains travel", examples: [{sentence: "Be careful near the rail at the station."}] },
+            { w: "view", def: "what you can see from a place, like a window or a hill", examples: [{sentence: "The view from the mountain was beautiful."}] },
+            { w: "power", def: "to provide a computer, machine, vehicle, etc. with the energy it needs to work well", examples: [{sentence: "The engine powers the whole machine."}] },
+            { w: "electricity", def: "a type of energy that gives power to things like lights and electronics to make them work", examples: [{sentence: "The storm caused the electricity to go out."}] },
+            { w: "market", def: "a place where people go to buy and sell things", examples: [{sentence: "We bought fresh fruit at the market."}] },
+            { w: "traditional", def: "following old ways or customs that people have used for a long time", examples: [{sentence: "She wore a traditional dress for the festival."}] },
+            { w: "buckwheat", def: "a small, dark grain used to make flour or food", examples: [{sentence: "Buckwheat is used to make noodles in Korea."}] },
+            { w: "chewy", def: "needing to be chewed for a long time before it can be swallowed", examples: [{sentence: "Chewy rice cakes are popular in Korea."}] },
+            { w: "tofu", def: "a soft, light-colored food made from soybeans", examples: [{sentence: "Tofu is a healthy food that many people eat."}] },
+            { w: "area", def: "a particular part of a place or piece of land", examples: [{sentence: "This area is very quiet at night."}] },
+            { w: "celebrate", def: "to do special and fun things to show that a particular occasion is important", examples: [{sentence: "They celebrate the holiday with food and music."}] },
+            { w: "harvest", def: "the time of year when crops are cut and collected, or the activity of cutting and collecting them", examples: [{sentence: "Farmers are busy during the harvest."}] },
+            { w: "take place", def: "to happen", examples: [{sentence: "The concert will take place on Friday night."}] },
+            { w: "wrestling", def: "a sport where two people fight and try to take each other to the ground", examples: [{sentence: "He practices wrestling every weekend."}] },
+            { w: "shiny", def: "bright and smooth because it reflects light", examples: [{sentence: "Her shoes are clean and shiny."}] },
+            { w: "herb", def: "a plant with a soft stem, used in food or to help with health", examples: [{sentence: "We added fresh herb to the soup."}] },
+            { w: "wave", def: "a raised line of water that moves across the surface of an area of water", examples: [{sentence: "The waves were high during the storm."}] },
+            { w: "pleasant", def: "nice, friendly, enjoyable, attractive", examples: [{sentence: "We had a pleasant walk in the park."}] },
+            { w: "content", def: "the ideas, information, or images in something like a book, video, or website", examples: [{sentence: "She creates fun content for her website."}] },
+            { w: "beauty", def: "the quality of being nice to look at or making people feel happy", examples: [{sentence: "The beauty of the sunset made everyone feel good."}] },
+            { w: "package", def: "something wrapped in paper or a box, usually sent by mail", examples: [{sentence: "A package was delivered to my door."}] },
+            { w: "historic", def: "important in history, or likely to be remembered for a long time", examples: [{sentence: "They visited a historic building in the city."}] },
+            { w: "recommendation", def: "a suggestion that something is good or suitable for a person or situation", examples: [{sentence: "I tried the restaurant after your recommendation."}] },
+            { w: "temple", def: "a building where people go to pray or show respect to a god", examples: [{sentence: "They visited a temple during their trip to Thailand."}] },
+            { w: "relaxed", def: "feeling relaxed and not worried", examples: [{sentence: "I feel relaxed when I wear this soft sweater."}] },
+            { w: "explore", def: "to search a place and find out more about it", examples: [{sentence: "I want to explore a new city this summer."}] },
+            { w: "discover", def: "to find something or learn something for the first time", examples: [{sentence: "They discovered a new way to solve the problem."}] }
+        ]
+    };
+
+    function processData(rawList) {
+        return rawList.map(item => {
+            const allWords = rawList.map(i => i.w);
+            const wrongOptions = allWords.filter(w => w !== item.w).sort(() => 0.5 - Math.random()).slice(0, 2);
+            const options = [item.w, ...wrongOptions].sort(() => 0.5 - Math.random());
+            return {
+                answer: item.w,
+                definition: item.def,
+                options: options,
+                examples: item.examples
+            };
+        });
+    }
+
+    let currentLessonData = [];
+    let currentIndex = 0;
+    let userName = "";
+    let selectedLevel = "";
+    let startTime, endTime; 
+
+    const quizBody = document.getElementById('quiz-body');
+    const progressBar = document.getElementById('progress-bar');
+
+    function startLesson(key) {
+        const nameInput = document.getElementById('user-name');
+        if (!nameInput.value.trim()) {
+            alert("이름을 입력해주세요! 😊");
+            nameInput.focus();
+            return;
+        }
+        userName = nameInput.value.trim();
+        selectedLevel = key;
+        currentLessonData = processData(allLessons[key]);
+        currentIndex = 0;
+        startTime = new Date(); 
+        document.getElementById('home-screen').style.display = 'none';
+        document.getElementById('quiz-interface').style.display = 'flex';
+        loadQuestion();
+    }
+
+    function goHome() {
+        document.getElementById('quiz-interface').style.display = 'none';
+        document.getElementById('home-screen').style.display = 'flex';
+    }
+
+    function loadQuestion() {
+        const q = currentLessonData[currentIndex];
+        const progress = (currentIndex / currentLessonData.length) * 100;
+        progressBar.style.width = `${progress}%`;
+        
+        quizBody.innerHTML = `
+            <div class="card fade-in" id="main-card">
+                <p style="color:#888; font-size:0.9em; margin-bottom:5px;">Quiz ${currentIndex + 1}/${currentLessonData.length}</p>
+                <p id="question-text">${q.definition}</p>
+                <div id="def-typing-box" class="typing-container hidden">
+                    <span class="typing-label">✍️ 위 영영풀이를 똑같이 타이핑하세요:</span>
+                    <input type="text" id="def-input" class="typing-input" placeholder="Type here..." autocomplete="off">
+                </div>
+            </div>
+            <div id="options-box" class="fade-in"></div>
+            <div id="flow-container"></div>
+        `;
+
+        const optionsBox = document.getElementById('options-box');
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt;
+            btn.onclick = () => checkWordAnswer(btn, opt);
+            optionsBox.appendChild(btn);
+        });
+    }
+
+    // 1단계: 단어 맞추기
+    function checkWordAnswer(btn, selected) {
+        const q = currentLessonData[currentIndex];
+        if (selected === q.answer) {
+            document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+            btn.classList.add('correct');
+            speak(q.definition);
+            
+            // 타이핑 박스 보이기
+            const defTypingBox = document.getElementById('def-typing-box');
+            defTypingBox.classList.remove('hidden');
+            const defInput = document.getElementById('def-input');
+            defInput.focus();
+
+            defInput.onkeyup = (e) => {
+                if (e.key === 'Enter') checkDefTyping();
+            };
+        } else {
+            btn.classList.add('incorrect');
+            setTimeout(() => btn.classList.remove('incorrect'), 500);
+        }
+    }
+
+    // 2단계: 영영풀이 타이핑 체크
+    function checkDefTyping() {
+        const q = currentLessonData[currentIndex];
+        const inputVal = document.getElementById('def-input').value.trim().toLowerCase();
+        const targetVal = q.definition.trim().toLowerCase();
+
+        // 문장 부호 제거 후 비교 (학생들 편의를 위해)
+        const cleanInput = inputVal.replace(/[.,]/g, "");
+        const cleanTarget = targetVal.replace(/[.,]/g, "");
+
+        if (cleanInput === cleanTarget) {
+            document.getElementById('def-input').disabled = true;
+            document.getElementById('def-input').classList.add('correct-flash');
+            
+            const flow = document.getElementById('flow-container');
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'next-btn';
+            nextBtn.textContent = '예시문 학습하기 ➡️';
+            nextBtn.onclick = () => showExampleModal(0);
+            flow.appendChild(nextBtn);
+            nextBtn.scrollIntoView({behavior: "smooth"});
+        } else {
+            alert("영영풀이를 정확하게 입력해주세요! (마침표 등은 생략 가능)");
+        }
+    }
+
+    // 3단계: 예시문 모달 및 타이핑
+    function showExampleModal(idx) {
+        const q = currentLessonData[currentIndex];
+        if (!q.examples || idx >= q.examples.length) {
+            finishQuestion();
+            return;
+        }
+        const ex = q.examples[idx];
+        const popupId = `ex-popup-${idx}`;
+        const html = `
+        <div class="modal-overlay" id="${popupId}">
+            <div class="modal-content">
+                <h3>Example Sentence</h3>
+                <p class="example-text" id="target-ex-text">${ex.sentence}</p>
+                <div class="typing-container" style="text-align:center;">
+                    <span class="typing-label">✍️ 위 예문을 똑같이 타이핑하세요:</span>
+                    <input type="text" id="ex-input" class="typing-input" placeholder="Type the sentence..." autocomplete="off">
+                    <button class="next-btn" id="ex-check-btn" style="margin-top:15px;">확인</button>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', html);
+        speak(ex.sentence);
+        
+        const popup = document.getElementById(popupId);
+        const exInput = popup.querySelector('#ex-input');
+        const checkBtn = popup.querySelector('#ex-check-btn');
+        
+        exInput.focus();
+
+        const verifyEx = () => {
+            const val = exInput.value.trim().toLowerCase().replace(/[.,!]/g, "");
+            const target = ex.sentence.toLowerCase().replace(/[.,!]/g, "");
+            if (val === target) {
+                popup.remove();
+                showExampleModal(idx + 1);
+            } else {
+                alert("문장을 정확하게 입력해 주세요!");
+            }
+        };
+
+        checkBtn.onclick = verifyEx;
+        exInput.onkeyup = (e) => { if(e.key === 'Enter') verifyEx(); };
+    }
+
+    function finishQuestion() {
+        quizBody.innerHTML += `
+            <button class="next-btn" id="final-next" style="background: var(--primary-color);">다음 문제로! 🚀</button>
+        `;
+        document.getElementById('final-next').onclick = () => {
+            currentIndex++;
+            if (currentIndex < currentLessonData.length) {
+                loadQuestion();
+            } else {
+                showFinalResult();
+            }
+        };
+        document.getElementById('final-next').scrollIntoView({behavior: "smooth"});
+    }
+
+    function showFinalResult() {
+        endTime = new Date();
+        const timeDiff = endTime - startTime; 
+        const seconds = Math.floor((timeDiff / 1000) % 60);
+        const minutes = Math.floor((timeDiff / (1000 * 60)) % 60);
+        const timeString = `${minutes}분 ${seconds}초`;
+        progressBar.style.width = '100%';
+        quizBody.innerHTML = `
+            <div style="text-align:center; padding:40px;">
+                <h1 style="font-size:3em; margin-bottom:10px;">🎉</h1>
+                <h2 style="color:#333; margin-bottom:10px;">학습 완료!</h2>
+                <p style="font-size:1.2em; margin-bottom:30px;">
+                    <strong style="color:var(--secondary-color);">${userName}</strong>님<br>
+                    단원: ${selectedLevel}<br>
+                    걸린 시간: <strong style="color:var(--primary-color);">${timeString}</strong>
+                </p>
+                <button class="submit-btn" onclick="sendData('${timeString}', this)">
+                    선생님께 기록 보내기 📮
+                </button>
+                <button class="next-btn" onclick="goHome()" style="margin-top:15px; background:#777;">홈으로</button>
+            </div>
+        `;
+    }
+
+    function sendData(timeString, btn) {
+        btn.textContent = "전송 중...";
+        btn.disabled = true;
+        const formData = new FormData();
+        formData.append("name", userName);
+        formData.append("level", selectedLevel);
+        formData.append("time", timeString);
+        
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            mode: 'no-cors', 
+            body: formData
+        }).then(() => {
+            btn.style.background = "#20bf6b";
+            btn.textContent = "전송 완료! ✅";
+            alert("기록이 성공적으로 전송되었습니다!");
+        }).catch(err => {
+            btn.textContent = "전송 실패 😢";
+            btn.disabled = false;
+        });
+    }
+
+    function speak(text) {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.85;
+        speechSynthesis.speak(u);
+    }
+</script>
+</body>
+</html>
